@@ -15,6 +15,14 @@ NETWORK="192.168.4.0"
 #echo "Updating system..."
 #apt-get update && apt-get upgrade -y
 
+# Check if iptables exists, if not, install it
+if ! command -v iptables >/dev/null; then
+    echo "iptables not found, installing..."
+    apt-get install -y iptables
+else
+    echo "iptables is already installed."
+fi
+
 # Install hostapd and dnsmasq
 echo "Installing hostapd and dnsmasq..."
 apt-get install -y hostapd dnsmasq
