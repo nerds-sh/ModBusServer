@@ -1,0 +1,9 @@
+[Unit]
+Description=Enable Wi-Fi Hotspot on Boot
+After=network.target
+
+[Service]
+ExecStart=/home/escuplast/ModBusServer/hotspot.sh
+
+[Install]
+WantedBy=multi-user.target
