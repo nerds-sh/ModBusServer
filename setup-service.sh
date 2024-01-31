@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Define the service unit file content
+# Define the service unit file content with absolute paths
 SERVICE_UNIT="[Unit]
 Description=escuplast-service
 After=network.target
 
 [Service]
-ExecStart=python3.9 ~/ModbusServer/server.py
-WorkingDirectory=~/ModbusServer
+ExecStart=/usr/bin/python3.9 /home/escuplast/ModbusServer/server.py
+WorkingDirectory=/home/escuplast/ModbusServer
 Restart=always
 User=escuplast
 
@@ -26,12 +26,15 @@ fi
 # Create the service unit file
 echo "$SERVICE_UNIT" | sudo tee "$SERVICE_UNIT_FILE"
 
-# Reload systemd
+# Reload systemd to recognize the new service
 sudo systemctl daemon-reload
 
-# Enable and start the service
+# Enable the service to start on boot
 sudo systemctl enable escuplast-service
+
+# Start the service
 sudo systemctl start escuplast-service
 
-# Check the service status
-sudo systemctl status escuplast-service
+# Optionally, check the service status to ensure it's running as expected
+echo "Checking the service status..."
+sudo systemctl status escuplast-service --no-pager
