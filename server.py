@@ -20,20 +20,30 @@ def run_modbus_server():
 @app.route('/write', methods=['POST'])
 def handle_modbus_write():
     client = ModbusTcpClient('localhost', port=5020)
-    if request.method == 'POST':
-        # Handling data writing to Modbus server
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid request"}), 400
+    
+    # Get the JSON data from the request
+    data = request.json
 
-        # Assuming register addresses start from 1 for simplicity
-        write_results = []
-        for address, value in data.items():
-            result = client.write_register(int(address), int(value))
-            write_results.append({"register": address, "status": "success" if not result.isError() else "failed"})
+    # Validate the JSON data structure
+    if not isinstance(data, dict) or not all(key in data for key in ['LengthOfLine', 'LengthOfWorkTool', 'HeightOfPiece']):
+        return jsonify({"error": "Invalid request format"}), 400
+
+    try:
+        # Write the values to Modbus registers 0 to 2
+        registers = [
+            data['LengthOfLine'],
+            data['LengthOfWorkTool'],
+            data['HeightOfPiece']
+        ]
+        for address, value in enumerate(registers, start=0):
+            client.write_register(address, int(value))
 
         client.close()
-        return jsonify(write_results), 200
+        return jsonify({"message": "Values updated successfully"}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/read', methods=['GET'])
 def handle_modbus_read():
@@ -41,10 +51,12 @@ def handle_modbus_read():
     if request.method == 'GET':
         # Handling data reading from Modbus server
         # Assuming we want to read the first 3 registers for demonstration
-        result = client.read_holding_registers(1, 3)
+        result = client.read_holding_registers(0, 3)
         client.close()
-        if result.isError():
-            return jsonify({"error": "Failed to read Modbus registers"}), 500
+        
+        if result.function_code > 0x80:
+            # Check if it's an error response
+            return jsonify({"error": f"Modbus error response (function code {result.function_code & 0x7F})"}), 500
 
         values = {
             "LengthOfLine": result.registers[0],
@@ -52,6 +64,7 @@ def handle_modbus_read():
             "HeightOfPiece": result.registers[2],
         }
         return jsonify(values), 200
+
 
 if __name__ == '__main__':
     # Configure logging
