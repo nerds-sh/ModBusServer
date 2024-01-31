@@ -11,9 +11,9 @@ DHCP_RANGE_MASK="255.255.255.0"
 DHCP_LEASE_TIME="24h"
 NETWORK="192.168.4.0"
 
-# Update system
-echo "Updating system..."
-apt-get update && apt-get upgrade -y
+# Update system (disabled)
+#echo "Updating system..."
+#apt-get update && apt-get upgrade -y
 
 # Install hostapd and dnsmasq
 echo "Installing hostapd and dnsmasq..."
