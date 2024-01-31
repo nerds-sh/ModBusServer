@@ -14,6 +14,7 @@ NETWORK="192.168.4.0"
 # Check if iptables exists, if not, install it
 if ! command -v iptables >/dev/null; then
     echo "iptables not found, installing..."
+    apt-get update
     apt-get install -y iptables
 else
     echo "iptables is already installed."
@@ -21,6 +22,7 @@ fi
 
 # Install hostapd and dnsmasq
 echo "Installing hostapd and dnsmasq..."
+apt-get update
 apt-get install -y hostapd dnsmasq
 
 # Stop services before configuring
@@ -92,3 +94,7 @@ echo "Wi-Fi hotspot setup complete. SSID: $SSID with passphrase: $WPA_PASSPHRASE
 
 # Reminder for persistent static IP configuration
 echo "Please ensure to configure a static IP for wlan0 (192.168.4.1) in /etc/dhcpcd.conf for persistence across reboots."
+
+# Enable the hotspot on boot
+systemctl enable hotspot-setup.service
+
