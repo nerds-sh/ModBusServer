@@ -11,10 +11,6 @@ DHCP_RANGE_MASK="255.255.255.0"
 DHCP_LEASE_TIME="24h"
 NETWORK="192.168.4.0"
 
-# Update system (disabled)
-#echo "Updating system..."
-#apt-get update && apt-get upgrade -y
-
 # Check if iptables exists, if not, install it
 if ! command -v iptables >/dev/null; then
     echo "iptables not found, installing..."
@@ -60,6 +56,11 @@ interface=$WIFI_INTERFACE
 dhcp-range=$DHCP_RANGE_START,$DHCP_RANGE_END,$DHCP_RANGE_MASK,$DHCP_LEASE_TIME
 EOF
 
+# Assign static IP address to the Wi-Fi interface
+echo "Assigning static IP address 192.168.4.1 to $WIFI_INTERFACE..."
+ip addr flush dev $WIFI_INTERFACE
+ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+
 # Enable IP forwarding
 echo "Enabling IP forwarding..."
 sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
@@ -88,3 +89,6 @@ systemctl enable dnsmasq
 systemctl restart dnsmasq
 
 echo "Wi-Fi hotspot setup complete. SSID: $SSID with passphrase: $WPA_PASSPHRASE"
+
+# Reminder for persistent static IP configuration
+echo "Please ensure to configure a static IP for wlan0 (192.168.4.1) in /etc/dhcpcd.conf for persistence across reboots."
