@@ -6,8 +6,8 @@ Description=escuplast-service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/python3.9 /home/escuplast/ModbusServer/server.py
-WorkingDirectory=/home/escuplast/ModbusServer
+ExecStart=/usr/local/bin/python3.9 /home/escuplast/ModBusServer/server.py
+WorkingDirectory=/home/escuplast/ModBusServer
 Restart=always
 User=escuplast
 
@@ -17,20 +17,20 @@ WantedBy=multi-user.target"
 # Define the service unit file path
 SERVICE_UNIT_FILE="/etc/systemd/system/escuplast-service.service"
 
-# Ensure the ModbusServer directory exists and set the correct ownership
-if [ ! -d "/home/escuplast/ModbusServer" ]; then
-    sudo mkdir -p /home/escuplast/ModbusServer
+# Ensure the ModBusServer directory exists and set the correct ownership
+if [ ! -d "/home/escuplast/ModBusServer" ]; then
+    sudo mkdir -p /home/escuplast/ModBusServer
 fi
-sudo chown -R escuplast:escuplast /home/escuplast/ModbusServer
+sudo chown -R escuplast:escuplast /home/escuplast/ModBusServer
 
 # Check if the server script exists
-if [ ! -f "/home/escuplast/ModbusServer/server.py" ]; then
-    echo "Server script not found in /home/escuplast/ModbusServer. Please ensure server.py is in place."
+if [ ! -f "/home/escuplast/ModBusServer/server.py" ]; then
+    echo "Server script not found in /home/escuplast/ModBusServer. Please ensure server.py is in place."
     exit 1
 fi
 
 # Set permissions for the server script
-sudo chmod +x /home/escuplast/ModbusServer/server.py
+sudo chmod +x /home/escuplast/ModBusServer/server.py
 
 # Check if the service unit file already exists
 if [ -f "$SERVICE_UNIT_FILE" ]; then
