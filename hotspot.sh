@@ -21,9 +21,9 @@ else
 fi
 
 # Install hostapd and dnsmasq
-echo "Installing hostapd and dnsmasq..."
-apt-get update
-apt-get install -y hostapd dnsmasq
+# echo "Installing hostapd and dnsmasq..."
+# apt-get update
+# apt-get install -y hostapd dnsmasq
 
 # Stop services before configuring
 systemctl stop hostapd
