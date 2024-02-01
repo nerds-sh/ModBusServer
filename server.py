@@ -29,7 +29,7 @@ def handle_modbus_write():
         return jsonify({"error": "Invalid request format"}), 400
 
     try:
-        # Write the values to Modbus registers 0 to 2
+        # Write the values to Modbus registers 0 to 5
         registers = [
             data['LengthOfLine'],
             data['LengthOfWorkTool'],
@@ -53,7 +53,7 @@ def handle_modbus_read():
     if request.method == 'GET':
         # Handling data reading from Modbus server
         # Assuming we want to read the first 3 registers for demonstration
-        result = client.read_holding_registers(0, 3)
+        result = client.read_holding_registers(0, 5)
         client.close()
         
         if result.function_code > 0x80:
