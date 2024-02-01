@@ -1,3 +1,5 @@
+import json
+import os
 from flask import Flask, request, jsonify
 from pymodbus3.server.sync import StartTcpServer
 from pymodbus3.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
@@ -8,11 +10,38 @@ import logging
 # Initialize Flask app
 app = Flask(__name__)
 
+def load_initial_values(filename="modbus_data.json"):
+    if os.path.exists(filename):
+        try:
+            with open(filename, "r") as json_file:
+                data = json.load(json_file)
+                # Initialize the Modbus data store with values from the JSON file
+                registers = [
+                    0,
+                    int(data.get('LengthOfLine', 0)),
+                    int(data.get('LengthOfWorkTool', 0)),
+                    int(data.get('HeightOfPiece', 0)),
+                    int(data.get('SpeedToWorkPlace', 0)),
+                    int(data.get('SpeedInFrezare', 0))
+                ]
+                return registers
+        except Exception as e:
+            print(f"Error loading initial values from JSON: {e}")
+    # Return default values if file does not exist or an error occurs
+    return [5] * 6  # Default values with the first register set to 5
+
+print(load_initial_values())
+
 # Initialize Modbus data store with arbitrary initial values
-store = ModbusSequentialDataBlock(0, [0] * 100)
+store = ModbusSequentialDataBlock(0, load_initial_values())
 modbus_context = ModbusSlaveContext(di=store, co=store, hr=store, ir=store)
 modbus_context = ModbusServerContext(slaves=modbus_context, single=True)
 
+# Helper function to save data to a JSON file
+def save_to_json_file(data, filename="modbus_data.json"):
+    with open(filename, "w") as json_file:
+        json.dump(data, json_file, indent=4)
+        
 # Helper function to start the Modbus TCP server
 def run_modbus_server():
     StartTcpServer(modbus_context, address=("0.0.0.0", 5020))
@@ -40,7 +69,8 @@ def handle_modbus_write():
         ]
         for address, value in enumerate(registers, start=0):
             client.write_register(address, int(value))
-
+            
+        save_to_json_file(data)
         client.close()
         return jsonify({"message": "Values updated successfully"}), 200
     except ValueError as e:
