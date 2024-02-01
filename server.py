@@ -33,10 +33,12 @@ def handle_modbus_write():
         registers = [
             data['LengthOfLine'],
             data['LengthOfWorkTool'],
-            data['HeightOfPiece']
+            data['HeightOfPiece'],
+            data['SpeedToWorkPlace'],
+            data['SpeedInFrezare']
         ]
         for address, value in enumerate(registers, start=0):
-            client.write_register(address, int(value))
+            store.setValues('h', address, [int(value)])  # Use 'h' for 16-bit registers
 
         client.close()
         return jsonify({"message": "Values updated successfully"}), 200
@@ -62,9 +64,10 @@ def handle_modbus_read():
             "LengthOfLine": result.registers[0],
             "LengthOfWorkTool": result.registers[1],
             "HeightOfPiece": result.registers[2],
+            "SpeedToWorkPlace": result.registers[3],
+            "SpeedInFrezare": result.registers[4]
         }
         return jsonify(values), 200
-
 
 if __name__ == '__main__':
     # Configure logging
