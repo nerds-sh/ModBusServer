@@ -29,16 +29,17 @@ def handle_modbus_write():
         return jsonify({"error": "Invalid request format"}), 400
 
     try:
-        # Write the values to Modbus registers 0 to 5
+        # Write the values to Modbus registers 0 to 2
         registers = [
             data['LengthOfLine'],
             data['LengthOfWorkTool'],
             data['HeightOfPiece'],
             data['SpeedToWorkPlace'],
             data['SpeedInFrezare']
+
         ]
         for address, value in enumerate(registers, start=0):
-            store.setValues('h', address, [int(value)])  # Use 'h' for 16-bit registers
+            client.write_register(address, int(value))
 
         client.close()
         return jsonify({"message": "Values updated successfully"}), 200
@@ -65,9 +66,10 @@ def handle_modbus_read():
             "LengthOfWorkTool": result.registers[1],
             "HeightOfPiece": result.registers[2],
             "SpeedToWorkPlace": result.registers[3],
-            "SpeedInFrezare": result.registers[4]
+            "SpeedInFrezare": result.registers[4],
         }
         return jsonify(values), 200
+
 
 if __name__ == '__main__':
     # Configure logging
