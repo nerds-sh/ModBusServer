@@ -82,4 +82,4 @@ EOF
 chmod +x /etc/rc.local
 
 # Enable and start hostapd and dnsmasq
-echo "Enabling and starting hostap
+echo "Enabling and starting hostapd and dnsmasq..."
