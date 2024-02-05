@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Configuration variables
+BRIDGE_INTERFACE="br0"
 WIFI_INTERFACE="wlan0"
-ETH_INTERFACE="eth0"
+ETH_INTERFACE="eth1"
 SSID="escuplast-freza"
 WPA_PASSPHRASE="virtual1234"
 DHCP_RANGE_START="192.168.4.2"
@@ -11,28 +12,33 @@ DHCP_RANGE_MASK="255.255.255.0"
 DHCP_LEASE_TIME="24h"
 NETWORK="192.168.4.0"
 
-# Check if iptables exists, if not, install it
-if ! command -v iptables >/dev/null; then
-    echo "iptables not found, installing..."
-    apt-get update
-    apt-get install -y iptables
-else
-    echo "iptables is already installed."
-fi
-
-# Install hostapd and dnsmasq
-# echo "Installing hostapd and dnsmasq..."
-# apt-get update
-# apt-get install -y hostapd dnsmasq
+# Install necessary packages
+echo "Checking and installing necessary packages..."
+apt-get update
+apt-get install -y iptables bridge-utils hostapd dnsmasq
 
 # Stop services before configuring
 systemctl stop hostapd
 systemctl stop dnsmasq
 
-# Configure hostapd
+# Create and configure network bridge
+echo "Creating and configuring network bridge..."
+ip link add name $BRIDGE_INTERFACE type bridge
+ip link set dev $BRIDGE_INTERFACE up
+ip link set dev $WIFI_INTERFACE master $BRIDGE_INTERFACE
+ip link set dev $ETH_INTERFACE master $BRIDGE_INTERFACE
+
+# Assign static IP address to the bridge interface
+echo "Assigning static IP address 192.168.4.1 to $BRIDGE_INTERFACE..."
+ip addr flush dev $WIFI_INTERFACE
+ip addr flush dev $ETH_INTERFACE
+ip addr add 192.168.4.1/24 brd + dev $BRIDGE_INTERFACE
+
+# Configure hostapd for WiFi interface without assigning IP
 echo "Configuring hostapd..."
 cat > /etc/hostapd/hostapd.conf <<EOF
 interface=$WIFI_INTERFACE
+bridge=$BRIDGE_INTERFACE
 driver=nl80211
 ssid=$SSID
 hw_mode=g
@@ -47,21 +53,14 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
-
-# Tell hostapd where to find its configuration file
 sed -i 's|#DAEMON_CONF=""|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
 
-# Configure dnsmasq
+# Configure dnsmasq for DHCP on the bridge interface
 echo "Configuring dnsmasq..."
 cat > /etc/dnsmasq.conf <<EOF
-interface=$WIFI_INTERFACE
+interface=$BRIDGE_INTERFACE
 dhcp-range=$DHCP_RANGE_START,$DHCP_RANGE_END,$DHCP_RANGE_MASK,$DHCP_LEASE_TIME
 EOF
-
-# Assign static IP address to the Wi-Fi interface
-echo "Assigning static IP address 192.168.4.1 to $WIFI_INTERFACE..."
-ip addr flush dev $WIFI_INTERFACE
-ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
 
 # Enable IP forwarding
 echo "Enabling IP forwarding..."
@@ -70,31 +69,17 @@ sysctl -p
 
 # Configure NAT
 echo "Configuring NAT..."
-iptables -t nat -A POSTROUTING -o $ETH_INTERFACE -j MASQUERADE
+iptables -t nat -A POSTROUTING -o $BRIDGE_INTERFACE -j MASQUERADE
 sh -c "iptables-save > /etc/iptables.ipv4.nat"
 
 # Setup to load the NAT rule on boot
+echo "Setting up NAT rule to load on boot..."
 cat > /etc/rc.local <<EOF
 #!/bin/sh -e
 iptables-restore < /etc/iptables.ipv4.nat
 exit 0
 EOF
-
 chmod +x /etc/rc.local
 
 # Enable and start hostapd and dnsmasq
-echo "Enabling and starting hostapd and dnsmasq..."
-systemctl unmask hostapd
-systemctl enable hostapd
-systemctl start hostapd
-systemctl enable dnsmasq
-systemctl restart dnsmasq
-
-echo "Wi-Fi hotspot setup complete. SSID: $SSID with passphrase: $WPA_PASSPHRASE"
-
-# Reminder for persistent static IP configuration
-echo "Please ensure to configure a static IP for wlan0 (192.168.4.1) in /etc/dhcpcd.conf for persistence across reboots."
-
-# Enable the hotspot on boot
-systemctl enable hotspot-setup.service
-
+echo "Enabling and starting hostap
